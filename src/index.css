@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nav-h: 68px;
+}
+
+html {
+  position: relative;
+  background: #f6f1ea;
+  color: #1e1917;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: 16px;
+  transition: font-size 0.4s ease;
+}
+html.present {
+  font-size: 18px;
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: #f6f1ea;
+  overflow-x: hidden;
+}
+::selection {
+  background: rgba(224, 163, 58, 0.35);
+}
+:focus-visible {
+  outline: 2px solid #b8432f;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-[1240px] px-5 sm:px-8 lg:px-10;
+  }
+  .eyebrow {
+    @apply text-[12px] font-semibold uppercase tracking-[0.16em] text-muted;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-white/70 shadow-soft;
+  }
+}
+
+/* Subtle film grain on dark sections — gives a printed, crafted feel */
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ───── Key-answer marker highlight ─────
+   default box-decoration-break (slice) = one continuous strip across wrapped
+   lines, so animating background-size sweeps left→right like a highlighter. */
+.keyline {
+  background-image: linear-gradient(100deg, rgba(240, 190, 80, 0.55), rgba(245, 205, 110, 0.7) 50%, rgba(240, 190, 80, 0.55));
+  background-repeat: no-repeat;
+  background-position: 0 92%;
+  background-size: 0% 100%;
+  padding: 0.04em 0.08em;
+  border-radius: 3px;
+}
+.keyline.is-active {
+  animation: keyglow 1.4s ease-in-out 3;
+}
+@keyframes keyglow {
+  0%,
+  100% {
+    text-shadow: none;
+  }
+  50% {
+    text-shadow: 0 0 14px rgba(224, 163, 58, 0.55);
+  }
+}
+.focus-pulse {
+  animation: focuspulse 1.6s ease-out 2;
+}
+@keyframes focuspulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(184, 67, 47, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(184, 67, 47, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
