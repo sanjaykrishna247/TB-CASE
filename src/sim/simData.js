@@ -31,21 +31,21 @@ export const history = [
 // side: patient's side. Image is viewed from the front, so patient's LEFT is on the viewer's RIGHT.
 export const chestPoints = {
   front: [
-    { id: 'RUZ-a', side: 'R', label: 'Right upper zone (infraclavicular)', x: 112, y: 110 },
-    { id: 'LUZ-a', side: 'L', label: 'Left upper zone (infraclavicular)', x: 188, y: 110, abnormal: true },
-    { id: 'RMZ-a', side: 'R', label: 'Right mid zone', x: 104, y: 196 },
-    { id: 'LMZ-a', side: 'L', label: 'Left mid zone', x: 196, y: 196 },
-    { id: 'RLZ-a', side: 'R', label: 'Right lower zone', x: 96, y: 258 },
-    { id: 'LLZ-a', side: 'L', label: 'Left lower zone', x: 204, y: 258 },
+    { id: 'RUZ-a', side: 'R', label: 'Right upper zone (infraclavicular)', x: 115, y: 108 },
+    { id: 'LUZ-a', side: 'L', label: 'Left upper zone (infraclavicular)', x: 185, y: 108, abnormal: true },
+    { id: 'RMZ-a', side: 'R', label: 'Right mid zone', x: 107, y: 189 },
+    { id: 'LMZ-a', side: 'L', label: 'Left mid zone', x: 193, y: 189 },
+    { id: 'RLZ-a', side: 'R', label: 'Right lower zone', x: 100, y: 246 },
+    { id: 'LLZ-a', side: 'L', label: 'Left lower zone', x: 200, y: 246 },
   ],
   back: [
     // from behind, patient's LEFT is on the viewer's LEFT
-    { id: 'LUZ-p', side: 'L', label: 'Left upper zone (suprascapular)', x: 92, y: 98, abnormal: true },
-    { id: 'RUZ-p', side: 'R', label: 'Right upper zone (suprascapular)', x: 208, y: 98 },
-    { id: 'LMZ-p', side: 'L', label: 'Left interscapular', x: 126, y: 170 },
-    { id: 'RMZ-p', side: 'R', label: 'Right interscapular', x: 174, y: 170 },
-    { id: 'LLZ-p', side: 'L', label: 'Left base', x: 100, y: 262 },
-    { id: 'RLZ-p', side: 'R', label: 'Right base', x: 200, y: 262 },
+    { id: 'LUZ-p', side: 'L', label: 'Left upper zone (suprascapular)', x: 96, y: 97, abnormal: true },
+    { id: 'RUZ-p', side: 'R', label: 'Right upper zone (suprascapular)', x: 204, y: 97 },
+    { id: 'LMZ-p', side: 'L', label: 'Left interscapular', x: 128, y: 164 },
+    { id: 'RMZ-p', side: 'R', label: 'Right interscapular', x: 172, y: 164 },
+    { id: 'LLZ-p', side: 'L', label: 'Left base', x: 103, y: 250 },
+    { id: 'RLZ-p', side: 'R', label: 'Right base', x: 197, y: 250 },
   ],
 };
 

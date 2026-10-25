@@ -20,8 +20,8 @@ const TOOLS = [
    same 300×380 coordinate space as the exam points in simData.
    SVG (x, y) ↔ world: X = (x − 150) / K,  Y = TOP − y / K
    ───────────────────────────────────────────────────────────── */
-const K = 150;
-const TOP = 2.62;
+const K = 140;
+const TOP = 2.66;
 
 function BodyModel({ view }) {
   const parts = useMemo(() => makeHuman({ withHead: false, surfaceDetail: false }), []);
@@ -198,8 +198,8 @@ export default function Auscultation({ onDone }) {
           <Torso view={view}>
             {tool === 'palpate' && view === 'front' && (
               <g onClick={() => (setNeck(true), onDone?.())} className="cursor-pointer">
-                <circle cx="164" cy="44" r="12" fill="rgba(224,163,58,.15)" stroke="#E0A33A" strokeDasharray="3 3" />
-                <text x="182" y="40" fill="#E0A33A" fontSize="11" fontFamily="Inter">left cervical chain</text>
+                <circle cx="163" cy="47" r="11" fill="rgba(224,163,58,.15)" stroke="#E0A33A" strokeDasharray="3 3" />
+                <text x="179" y="43" fill="#E0A33A" fontSize="11" fontFamily="Inter">left cervical chain</text>
               </g>
             )}
             {tool !== 'palpate' &&

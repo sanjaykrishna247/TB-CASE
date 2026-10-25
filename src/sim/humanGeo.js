@@ -8,18 +8,19 @@ import * as THREE from 'three';
 
 // Torso profile: [y, half-width, half-depth, front bulge]
 const TORSO = [
-  [-0.12, 0.5, 0.31, 0.0],
-  [0.12, 0.47, 0.29, 0.0],
-  [0.38, 0.44, 0.27, 0.0], // waist
-  [0.65, 0.5, 0.29, 0.01],
-  [0.95, 0.58, 0.32, 0.03],
-  [1.25, 0.64, 0.34, 0.05], // chest
-  [1.55, 0.68, 0.34, 0.05],
-  [1.8, 0.74, 0.31, 0.02],
-  [1.97, 0.77, 0.27, 0.0], // shoulder line
-  [2.06, 0.6, 0.22, 0.0],
-  [2.13, 0.32, 0.17, 0.0], // trapezius slope
-  [2.18, 0.15, 0.13, 0.0], // neck base
+  [-0.45, 0.52, 0.32, 0],
+  [-0.12, 0.5, 0.31, 0],
+  [0.12, 0.47, 0.29, 0],
+  [0.38, 0.44, 0.27, 0], // waist
+  [0.65, 0.5, 0.29, 0],
+  [0.95, 0.58, 0.32, 0],
+  [1.25, 0.63, 0.34, 0], // chest
+  [1.55, 0.66, 0.34, 0],
+  [1.8, 0.69, 0.31, 0],
+  [1.95, 0.66, 0.27, 0], // top of the shoulders (rounded into the deltoids)
+  [2.05, 0.5, 0.21, 0],
+  [2.13, 0.3, 0.17, 0], // trapezius slope
+  [2.18, 0.15, 0.13, 0], // neck base
 ];
 
 // smooth Catmull-Rom interpolation through the profile keys (no banding between keys)
@@ -53,7 +54,7 @@ function torso() {
       const ca = Math.cos(a);
       const sa = Math.sin(a);
       // superellipse (n≈2.6) → flatter flanks, rounder chest
-      const n = 2.6;
+      const n = 2.35;
       const x = Math.sign(ca) * Math.abs(ca) ** (2 / n) * w;
       let z = Math.sign(sa) * Math.abs(sa) ** (2 / n) * d;
       // surface anatomy — all smooth gaussians so there are no creases
@@ -62,9 +63,8 @@ function torso() {
       if (sa > 0) {
         const front = sa ** 1.5;
         let dz = 0;
-        dz += 0.075 * g(ax, 0.25, 0.12) * g(y, 1.6, 0.16); // pectoralis major
-        dz -= 0.018 * g(ax, 0.26, 0.14) * g(y, 1.38, 0.06); // shadow under the pecs
-        dz -= 0.014 * g(x, 0, 0.03) * g(y, 1.55, 0.3); // sternal groove
+        dz += 0.05 * g(ax, 0.24, 0.13) * g(y, 1.58, 0.17); // pectoralis major
+                dz -= 0.014 * g(x, 0, 0.03) * g(y, 1.55, 0.3); // sternal groove
         dz += 0.022 * g(ax, 0.1, 0.055) * g(y, 0.85, 0.32); // rectus abdominis
         dz -= 0.008 * g(x, 0, 0.018) * g(y, 0.8, 0.4); // linea alba
         dz += 0.012 * g(ax, 0.42, 0.06) * g(y, 1.18, 0.12); // serratus
@@ -230,12 +230,165 @@ function joint(c, r) {
   return g;
 }
 
-function hand(side, wrist) {
-  const g = new THREE.SphereGeometry(1, 24, 16);
-  g.scale(0.055, 0.13, 0.035);
-  g.rotateZ(side * 0.06);
-  g.translate(wrist.x + side * 0.01, wrist.y - 0.12, wrist.z + 0.01);
+/** sweep a circle of varying radius along a smooth curve (closed at both ends) */
+function sweep(points, radiusAt, segs = 120, radial = 28, flatten = 1) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const frames = curve.computeFrenetFrames(segs, false);
+  const pos = [];
+  const idx = [];
+  const p = new THREE.Vector3();
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    curve.getPointAt(t, p);
+    const r = radiusAt(t, p);
+    const N = frames.normals[i];
+    const B = frames.binormals[i];
+    for (let j = 0; j < radial; j++) {
+      const a = (j / radial) * Math.PI * 2;
+      const cx = Math.cos(a) * r * flatten;
+      const cy = Math.sin(a) * r;
+      pos.push(p.x + N.x * cx + B.x * cy, p.y + N.y * cx + B.y * cy, p.z + N.z * cx + B.z * cy);
+    }
+  }
+  for (let i = 0; i < segs; i++)
+    for (let j = 0; j < radial; j++) {
+      const a = i * radial + j;
+      const b = i * radial + ((j + 1) % radial);
+      idx.push(a, b, a + radial, b, b + radial, a + radial);
+    }
+  // end caps
+  const capStart = pos.length / 3;
+  curve.getPointAt(0, p);
+  pos.push(p.x, p.y, p.z);
+  const capEnd = capStart + 1;
+  curve.getPointAt(1, p);
+  pos.push(p.x, p.y, p.z);
+  for (let j = 0; j < radial; j++) {
+    idx.push(capStart, j, (j + 1) % radial);
+    const o = segs * radial;
+    idx.push(capEnd, o + ((j + 1) % radial), o + j);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
   return g;
+}
+
+/** sweep along a mostly-vertical curve with an elliptical cross-section in the horizontal plane */
+function vsweep(points, rx, rz, segs = 24, radial = 24, roundEnd = false) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const pos = [];
+  const idx = [];
+  const p = new THREE.Vector3();
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    curve.getPointAt(t, p);
+    // rounded fingertip: last 18 % closes like a hemisphere
+    const e = roundEnd && t > 0.82 ? Math.sqrt(Math.max(0.02, 1 - ((t - 0.82) / 0.18) ** 2)) : 1;
+    for (let j = 0; j < radial; j++) {
+      const a = (j / radial) * Math.PI * 2;
+      pos.push(p.x + Math.cos(a) * rx(t) * e, p.y, p.z + Math.sin(a) * rz(t) * e);
+    }
+  }
+  for (let i = 0; i < segs; i++)
+    for (let j = 0; j < radial; j++) {
+      const a = i * radial + j;
+      const b = i * radial + ((j + 1) % radial);
+      idx.push(a, a + radial, b, b, a + radial, b + radial);
+    }
+  const c0 = pos.length / 3;
+  curve.getPointAt(0, p);
+  pos.push(p.x, p.y + rx(0) * 0.3, p.z);
+  curve.getPointAt(1, p);
+  pos.push(p.x, p.y - rx(1) * (roundEnd ? 0.05 : 0.8), p.z);
+  for (let j = 0; j < radial; j++) {
+    idx.push(c0, (j + 1) % radial, j);
+    const o = segs * radial;
+    idx.push(c0 + 1, o + j, o + ((j + 1) % radial));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// arm thickness by height: deltoid → biceps → slim elbow → forearm swell → slim wrist
+const ARM_R = [
+  [1.95, 0.12],
+  [1.84, 0.152],
+  [1.68, 0.132],
+  [1.45, 0.115],
+  [1.15, 0.088],
+  [1.0, 0.09],
+  [0.85, 0.098],
+  [0.62, 0.076],
+  [0.46, 0.054],
+  [0.4, 0.046],
+];
+const armR = (y) => {
+  for (let i = 0; i < ARM_R.length - 1; i++) {
+    const [y0, r0] = ARM_R[i];
+    const [y1, r1] = ARM_R[i + 1];
+    if (y <= y0 && y >= y1) {
+      const t = (y0 - y) / (y0 - y1);
+      return r0 + (r1 - r0) * (t * t * (3 - 2 * t));
+    }
+  }
+  return y > ARM_R[0][0] ? ARM_R[0][1] : ARM_R[ARM_R.length - 1][1];
+};
+
+function arm(s) {
+  const pts = [
+    new THREE.Vector3(s * 0.48, 1.86, -0.02), // starts inside the shoulder
+    new THREE.Vector3(s * 0.67, 1.86, -0.01),
+    new THREE.Vector3(s * 0.79, 1.58, -0.03),
+    new THREE.Vector3(s * 0.85, 1.05, -0.04), // elbow
+    new THREE.Vector3(s * 0.88, 0.7, 0.02),
+    new THREE.Vector3(s * 0.9, 0.4, 0.05), // wrist
+  ];
+  return sweep(pts, (t, p) => armR(p.y), 160, 32);
+}
+
+/** relaxed hand at the side: palm towards the thigh, turned slightly so the back of the hand shows */
+function hand(s) {
+  const H = 1.55;
+  const wx = s * 0.9;
+  const wy = 0.4;
+  const wz = 0.05;
+  // built in a local frame: x = palm thickness (towards the thigh is −s), z = across the knuckles (+z = thumb side)
+  const L = (dx, dy, dz) => new THREE.Vector3(dx * H, dy * H, dz * H);
+  const parts = [];
+  parts.push(vsweep([L(0, 0.035, 0), L(0.001, -0.02, 0.001), L(0.004, -0.1, 0.003)], (t) => (0.03 - 0.014 * Math.min(1, t * 2.2) + 0.004 * Math.sin(t * Math.PI)) * H, (t) => (0.033 + 0.012 * Math.min(1, t * 1.6)) * H, 24, 28, true));
+  const fingers = [
+    { z: 0.03, len: 0.075, r: 0.0105 },
+    { z: 0.01, len: 0.083, r: 0.011 },
+    { z: -0.01, len: 0.078, r: 0.0105 },
+    { z: -0.028, len: 0.063, r: 0.0092 },
+  ];
+  for (const f of fingers) {
+    const pts = [];
+    for (let k = 0; k <= 4; k++) {
+      const t = k / 4;
+      pts.push(L(0.004 - t * t * 0.02, -0.08 - t * (f.len + 0.018), f.z + t * 0.002));
+    }
+    const rr = (t) => (f.r - 0.0025 * t + 0.001 * Math.sin(t * Math.PI * 3)) * H;
+    parts.push(vsweep(pts, rr, rr, 24, 16, true));
+  }
+  const thumbR = (t) => (0.013 - 0.003 * t) * H;
+  parts.push(vsweep([L(-0.004, 0.0, 0.02), L(-0.012, -0.04, 0.042), L(-0.018, -0.082, 0.05)], thumbR, thumbR, 22, 16, true));
+  // mirror for the left/right side, turn so the back of the hand faces forwards-outwards, then place at the wrist
+  const turn = new THREE.Matrix4().makeRotationY(s > 0 ? -0.75 : 0.75);
+  const mirror = new THREE.Matrix4().makeScale(s, 1, 1);
+  return parts.map((g) => {
+    g.applyMatrix4(mirror);
+    if (s < 0) g.index.array.reverse(); // keep faces outward after mirroring
+    g.applyMatrix4(turn);
+    g.translate(wx, wy, wz);
+    g.computeVertexNormals();
+    return g;
+  });
 }
 
 function adamsApple() {
@@ -256,7 +409,7 @@ function clavicles() {
     const pts = [];
     for (let i = 0; i <= 12; i++) {
       const t = i / 12;
-      const x = s * (0.05 + 0.55 * t);
+      const x = s * (0.05 + 0.4 * t);
       const y = 2.07 - 0.03 * Math.sin(t * Math.PI) + 0.02 * t;
       pts.push(new THREE.Vector3(x, y, surfZ(x, y) + 0.004));
     }
@@ -268,14 +421,6 @@ export function makeHuman({ withHead = true, surfaceDetail = true } = {}) {
   const parts = [torso(), neck()];
   if (surfaceDetail) parts.push(adamsApple(), ...clavicles());
   if (withHead) parts.push(head(), ...eyes(), ...lids(), ...ear(-1), ...ear(1));
-  for (const s of [-1, 1]) {
-    const sh = new THREE.Vector3(s * 0.74, 1.96, -0.01);
-    const el = new THREE.Vector3(s * 0.86, 1.05, -0.04);
-    const wr = new THREE.Vector3(s * 0.9, 0.28, 0.06);
-    const delt = new THREE.SphereGeometry(0.155, 28, 20);
-    delt.scale(1, 1.05, 0.95);
-    delt.translate(s * 0.71, 1.92, -0.01);
-    parts.push(delt, limb(sh, el, 0.135, 0.095, 0.3, 0.14), joint(el, 0.098), limb(el, wr, 0.095, 0.058, 0.2, 0.18), joint(wr, 0.06), hand(s, wr));
-  }
+  for (const s of [-1, 1]) parts.push(arm(s), ...hand(s));
   return parts;
 }
