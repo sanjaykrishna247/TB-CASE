@@ -31,12 +31,12 @@ export const history = [
 // side: patient's side. Image is viewed from the front, so patient's LEFT is on the viewer's RIGHT.
 export const chestPoints = {
   front: [
-    { id: 'RUZ-a', side: 'R', label: 'Right upper zone (2nd ICS, MCL)', x: 110, y: 182 },
-    { id: 'LUZ-a', side: 'L', label: 'Left upper zone (2nd ICS, MCL)', x: 190, y: 182, abnormal: true },
-    { id: 'RMZ-a', side: 'R', label: 'Right mid zone (4th ICS)', x: 106, y: 211 },
-    { id: 'LMZ-a', side: 'L', label: 'Left mid zone (4th ICS)', x: 194, y: 211 },
-    { id: 'RLZ-a', side: 'R', label: 'Right lower zone (6th ICS, AAL)', x: 91, y: 263 },
-    { id: 'LLZ-a', side: 'L', label: 'Left lower zone (6th ICS, AAL)', x: 209, y: 263 },
+    { id: 'RUZ-a', side: 'R', label: 'Right upper zone (2nd ICS, MCL)', x: 117, y: 183 },
+    { id: 'LUZ-a', side: 'L', label: 'Left upper zone (2nd ICS, MCL)', x: 183, y: 183, abnormal: true },
+    { id: 'RMZ-a', side: 'R', label: 'Right mid zone (4th ICS)', x: 115, y: 219 },
+    { id: 'LMZ-a', side: 'L', label: 'Left mid zone (4th ICS)', x: 185, y: 219 },
+    { id: 'RLZ-a', side: 'R', label: 'Right lower zone (6th ICS)', x: 108, y: 258 },
+    { id: 'LLZ-a', side: 'L', label: 'Left lower zone (6th ICS)', x: 192, y: 258 },
   ],
   back: [
     // from behind, patient's LEFT is on the viewer's LEFT
