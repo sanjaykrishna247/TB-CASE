@@ -4,11 +4,24 @@ import config from '../config';
 import { useApp } from '../AppContext';
 
 const ECG = 'M0 60 H200 l16 -7 l12 7 H270 l10 -44 l16 92 l14 -70 l10 22 H370 l24 -12 l22 12 H600';
+const NAME = "Vinayaka Mission's Research Foundation";
+const WRITE_AT = 0.7; // s — handwriting starts
+const WRITE_DUR = 2.4; // s — time to write the name
 
-/** Heartbeat line → wordmark → lift away. Click or any key skips. */
+/** Crest → name handwritten in cursive → heartbeat line + title → lift away. Click or any key skips. */
 export default function Preloader() {
   const { setLoaded, reduced } = useApp();
   const [show, setShow] = useState(true);
+  const [fontReady, setFontReady] = useState(false);
+
+  // wait for the script font so the handwriting never starts in a fallback font
+  useEffect(() => {
+    let done = false;
+    const go = () => !done && ((done = true), setFontReady(true));
+    document.fonts?.load('72px "Great Vibes"').then(go, go);
+    const t = setTimeout(go, 1200);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setShow(false), reduced ? 300 : config.preloaderMs);
@@ -19,6 +32,8 @@ export default function Preloader() {
       window.removeEventListener('keydown', skip);
     };
   }, [reduced]);
+
+  const write = { duration: WRITE_DUR, delay: WRITE_AT, ease: [0.45, 0.05, 0.55, 0.95] };
 
   return (
     <AnimatePresence onExitComplete={() => setLoaded(true)}>
@@ -32,35 +47,79 @@ export default function Preloader() {
           role="status"
           aria-label="Loading presentation"
         >
-          <div className="relative w-[min(560px,86vw)] text-center">
-            <svg viewBox="0 0 600 120" className="w-full overflow-visible">
-              <motion.path
-                d={ECG}
-                fill="none"
-                stroke="#F1E4D3"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1, ease: 'easeInOut' }}
-              />
-              <motion.circle cx="600" cy="60" r="6" fill="#E0533F" initial={{ scale: 0 }} animate={{ scale: [0, 1.5, 1] }} transition={{ delay: 0.95, duration: 0.5 }} />
+          <div className="relative flex w-[min(820px,92vw)] flex-col items-center text-center">
+            {/* crest on an ivory disc so its blue and red read on the dark screen */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="relative grid h-32 w-32 place-items-center rounded-full bg-ivory shadow-[0_0_0_6px_rgba(241,228,211,.08),0_20px_60px_-10px_rgba(224,163,58,.35)] sm:h-40 sm:w-40"
+            >
+              <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[82%] w-auto object-contain" />
+            </motion.div>
+
+            {/* cursive name, revealed left → right with a glowing pen nib */}
+            <svg viewBox="0 0 1000 140" className="mt-6 w-full overflow-visible" aria-label={NAME}>
+              <defs>
+                <clipPath id="writeClip">
+                  <motion.rect x="0" y="0" height="140" initial={{ width: 0 }} animate={fontReady ? { width: 1000 } : {}} transition={write} />
+                </clipPath>
+                <linearGradient id="ink" x1="0" x2="1">
+                  <stop offset="0" stopColor="#F6E7D6" />
+                  <stop offset="1" stopColor="#E0A33A" />
+                </linearGradient>
+              </defs>
+              <text
+                x="500"
+                y="92"
+                textAnchor="middle"
+                textLength="920"
+                lengthAdjust="spacingAndGlyphs"
+                fontFamily='"Great Vibes", cursive'
+                fontSize="74"
+                fill="url(#ink)"
+                clipPath="url(#writeClip)"
+                style={{ opacity: fontReady ? 1 : 0 }}
+              >
+                {NAME}
+              </text>
+              <motion.g initial={{ x: 40, opacity: 0 }} animate={fontReady ? { x: [40, 960], opacity: [0, 1, 1, 0] } : {}} transition={{ ...write, opacity: { duration: WRITE_DUR, delay: WRITE_AT, times: [0, 0.05, 0.92, 1] } }}>
+                <circle cx="0" cy="78" r="5" fill="#FFE7B0" />
+                <circle cx="0" cy="78" r="14" fill="#E0A33A" opacity="0.35" />
+              </motion.g>
             </svg>
-            <div className="mt-6 overflow-hidden">
+
+            <motion.div className="mt-6 w-[min(520px,80vw)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2 }}>
+              <svg viewBox="0 0 600 120" className="w-full overflow-visible">
+                <motion.path
+                  d={ECG}
+                  fill="none"
+                  stroke="#F1E4D3"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.9, delay: WRITE_AT + WRITE_DUR - 0.2, ease: 'easeInOut' }}
+                />
+                <motion.circle cx="600" cy="60" r="6" fill="#E0533F" initial={{ scale: 0 }} animate={{ scale: [0, 1.5, 1] }} transition={{ delay: WRITE_AT + WRITE_DUR + 0.6, duration: 0.5 }} />
+              </svg>
+            </motion.div>
+            <div className="mt-2 overflow-hidden">
               <motion.div
-                className="font-serif text-5xl font-medium tracking-tight text-ivory sm:text-6xl"
+                className="font-serif text-3xl font-medium tracking-tight text-ivory sm:text-4xl"
                 initial={{ y: '110%' }}
                 animate={{ y: 0 }}
-                transition={{ delay: 0.9, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: WRITE_AT + WRITE_DUR + 0.4, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
               >
                 TB Case Study
               </motion.div>
             </div>
-            <motion.p className="mt-3 text-sm text-ivory/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }}>
+            <motion.p className="mt-2 text-sm text-ivory/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: WRITE_AT + WRITE_DUR + 0.7 }}>
               A case of pulmonary tuberculosis
             </motion.p>
           </div>
+          <span className="absolute bottom-6 right-6 text-[12px] text-ivory/35">Click or press any key to skip</span>
         </motion.div>
       )}
     </AnimatePresence>

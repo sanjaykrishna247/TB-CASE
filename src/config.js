@@ -10,7 +10,7 @@ const config = {
   departmentName: 'Dept. of Pathology · Microbiology · Pharmacology',
 
   // Preloader length in ms (it can always be skipped with a click or any key)
-  preloaderMs: 2200,
+  preloaderMs: 5200,
 
   // How long the "marker sweep" highlight stays bright after a jump (ms)
   highlightMs: 4000,
