@@ -24,7 +24,7 @@ const HILAR_L = O(0.13, 1.45, 0.03);
 const HILAR_R = O(-0.13, 1.45, 0.03);
 const CERVICAL_L = [V(0.11, 2.3, 0.04), V(0.115, 2.4, 0.03), V(0.11, 2.5, 0.05)];
 const CERVICAL_R = [V(-0.11, 2.34, 0.04), V(-0.115, 2.46, 0.03)];
-const HEART = O(0.1, 1.12, 0.12);
+const HEART = O(0.06, 1.16, 0.1);
 const CONTACT_Z = 1.7; // infectious contact stands face to face with the patient
 const M = V(40, 0, 0); // microscopic scene lives far away in the same world
 
@@ -127,10 +127,64 @@ function Organs({ jr }) {
         <mesh geometry={tree} material={airMat} />
       </group>
       <mesh geometry={upper} material={airMat} />
-      <mesh ref={heart} position={HEART} scale={[1, 1.15, 0.9]}>
-        <sphereGeometry args={[0.12, 32, 24]} />
-        <meshStandardMaterial color="#9b1c2c" emissive="#4a0710" transparent opacity={0.4} depthWrite={false} />
-      </mesh>
+      <group ref={heart} position={HEART}>
+        <Heart />
+      </group>
+    </group>
+  );
+}
+
+/* Anatomical heart: cone-shaped ventricles with the apex pointing down, forwards and to the
+   patient's left, atria at the base, aortic arch and pulmonary trunk on top. */
+function Heart() {
+  const { body, vessels, mat, vmat } = useMemo(() => {
+    // heart profile (radius vs height), base at the top, apex at the bottom
+    const prof = [
+      [0.001, 0.13],
+      [0.07, 0.125],
+      [0.105, 0.09],
+      [0.118, 0.04],
+      [0.112, -0.02],
+      [0.09, -0.08],
+      [0.055, -0.13],
+      [0.02, -0.16],
+      [0.001, -0.168],
+    ].map(([r, y]) => new THREE.Vector2(r, y));
+    const body = new THREE.LatheGeometry(prof, 40);
+    // flatten front-to-back and make the ventricles a little broader to the left
+    const p = body.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i);
+      const y = p.getY(i);
+      const z = p.getZ(i);
+      const groove = 1 - 0.06 * Math.exp(-((x - 0.01) ** 2) / 0.0008) * (y < 0.05 ? 1 : 0); // interventricular groove
+      p.setXYZ(i, x * 1.08 * groove, y, z * 0.78);
+    }
+    body.computeVertexNormals();
+    // tilt: apex towards the patient's left (+x), down and slightly forwards
+    body.rotateZ(0.7);
+    body.rotateX(-0.25);
+
+    const tube = (pts, r) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((q) => new THREE.Vector3(...q))), 48, r, 12, false);
+    const vessels = [
+      // ascending aorta → arch (to the left and back) → descending aorta
+      tube([[-0.02, 0.1, 0.02], [-0.03, 0.22, 0.02], [0.02, 0.3, -0.03], [0.08, 0.27, -0.09], [0.1, 0.15, -0.12], [0.1, -0.15, -0.13]], 0.028),
+      // pulmonary trunk, splitting towards both lungs
+      tube([[0.04, 0.08, 0.06], [0.06, 0.18, 0.05], [0.04, 0.24, 0.0], [-0.12, 0.25, -0.02]], 0.022),
+      tube([[0.05, 0.22, 0.02], [0.14, 0.24, -0.01]], 0.019),
+      // superior vena cava
+      tube([[-0.09, 0.05, 0.0], [-0.09, 0.3, -0.01]], 0.02),
+    ];
+    const mat = new THREE.MeshStandardMaterial({ color: '#8f2a2a', emissive: '#3a0a0a', roughness: 0.55, transparent: true, opacity: 0.6, depthWrite: false });
+    const vmat = new THREE.MeshStandardMaterial({ color: '#a8484a', emissive: '#3a1010', roughness: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
+    return { body, vessels, mat, vmat };
+  }, []);
+  return (
+    <group scale={0.95}>
+      <mesh geometry={body} material={mat} />
+      {vessels.map((g, i) => (
+        <mesh key={i} geometry={g} material={vmat} />
+      ))}
     </group>
   );
 }
