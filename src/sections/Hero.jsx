@@ -102,9 +102,14 @@ export default function Hero() {
 
       <motion.div style={{ opacity: hintOpacity }} className="pointer-events-none absolute bottom-0 left-0 right-0 z-10">
         <motion.div {...fade(loaded, 1.3)} className="container-x flex items-end justify-between gap-6 pb-7">
-          <p className="max-w-lg text-[12px] leading-relaxed text-ivory/40">
-            {config.departmentName} · {config.collegeName}
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ivory shadow-[0_0_0_4px_rgba(241,228,211,.06)]">
+              <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
+            </span>
+            <p className="max-w-lg text-[12px] leading-relaxed text-ivory/45">
+              {config.departmentName} · {config.collegeName}
+            </p>
+          </div>
           <p className="hidden shrink-0 text-[12px] text-ivory/45 sm:block">Drag the lungs to rotate · scroll to zoom in</p>
         </motion.div>
       </motion.div>
