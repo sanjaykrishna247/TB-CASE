@@ -82,6 +82,14 @@ so no extra files are needed.
 > Hosting: on a static host, either configure a rewrite of `/simulation` → `/index.html`, or link to `/#/simulation`
 > (that also works without any configuration).
 
+## 3D human model
+
+The realistic body in the simulation (`public/models/human-male.bin`) is built from the
+[MakeHuman](http://www.makehumancommunity.org) base mesh and young-male shape targets, which the
+MakeHuman project released as **CC0 (public domain)** in 2020. `scripts/build-human.py` converts them:
+it applies the average young-male shape, lowers the arms into a relaxed stance and scales the body to
+the scene. If the file can't be loaded, a simpler built-in body is used instead.
+
 ## Structure
 
 ```

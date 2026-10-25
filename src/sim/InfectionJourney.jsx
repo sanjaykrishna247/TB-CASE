@@ -6,26 +6,34 @@ import { Maximize2, Pause, Play, RotateCcw, SkipBack, SkipForward, Tag, Video } 
 import { makeBronchialTree, makeLungGeometry } from '../three/geometry';
 import { createHoloMaterial } from '../three/HoloMaterial';
 import { makeHuman } from './humanGeo';
+import { useHumanGeometry } from './humanModel';
 
 /* ════════════════════════════════════════════════════════════════
    Key world positions (patient faces +z; patient's LEFT = +x)
    ════════════════════════════════════════════════════════════════ */
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const GHON = V(0.44, 1.24, 0.06); // subpleural focus, lower part of left upper lobe
-const APEX = V(0.27, 1.68, 0.04); // reactivation site, left apex
-const HILAR_L = V(0.13, 1.45, 0.03);
-const HILAR_R = V(-0.13, 1.45, 0.03);
+const CH_Y = 1.42; // chest (lungs + bronchial tree) placement inside the body
+const CH_S = 0.38;
+const KS = CH_S / 0.36;
+// convert a point from the original organ layout to the current chest placement
+const O = (x, y, z) => V(x * KS, CH_Y + (y - 1.25) * KS, z * KS);
+const TRACHEA_TOP = V(0, CH_Y + 1.85 * CH_S, 0.02);
+const GHON = O(0.44, 1.24, 0.06); // subpleural focus, lower part of left upper lobe
+const APEX = O(0.27, 1.68, 0.04); // reactivation site, left apex
+const HILAR_L = O(0.13, 1.45, 0.03);
+const HILAR_R = O(-0.13, 1.45, 0.03);
 const CERVICAL_L = [V(0.11, 2.3, 0.04), V(0.115, 2.4, 0.03), V(0.11, 2.5, 0.05)];
 const CERVICAL_R = [V(-0.11, 2.34, 0.04), V(-0.115, 2.46, 0.03)];
-const HEART = V(0.1, 1.12, 0.12);
+const HEART = O(0.1, 1.12, 0.12);
 const CONTACT_Z = 1.7; // infectious contact stands face to face with the patient
 const M = V(40, 0, 0); // microscopic scene lives far away in the same world
 
 const curve = (pts) => new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.3);
-const INHALE = curve([V(0, 2.64, 1.37), V(0, 2.68, 1.05), V(0, 2.72, 0.7), V(0, 2.725, 0.33), V(0, 2.83, 0.2), V(0, 2.74, 0.0), V(0, 2.5, 0.02), V(0, 2.27, 0.06), V(0, 1.92, 0.02)]);
-const AIRWAY = curve([V(0, 1.92, 0.02), V(0, 1.52, 0.02), V(0.17, 1.37, 0.02), V(0.32, 1.3, 0.04), GHON]);
-const LYMPH = curve([GHON, V(0.3, 1.36, 0.04), HILAR_L, V(0.08, 1.75, 0.0), V(0.16, 2.08, 0.0), CERVICAL_L[0], CERVICAL_L[1]]);
-const EXHALE = curve([APEX, V(0.17, 1.5, 0.02), V(0, 1.52, 0.02), V(0, 1.92, 0.02), V(0, 2.27, 0.06), V(0, 2.62, 0.2), V(0, 2.64, 0.31), V(0, 2.65, 0.7), V(0, 2.66, 1.05), V(0, 2.64, 1.37)]);
+// contact's mouth → our patient's nostril → nasopharynx → larynx → trachea
+const INHALE = curve([V(0, 2.66, CONTACT_Z - 0.5), V(0, 2.69, 0.95), V(0, 2.71, 0.66), V(0, 2.72, 0.5), V(0, 2.74, 0.3), V(0, 2.62, 0.12), V(0, 2.42, 0.1), V(0, 2.27, 0.08), TRACHEA_TOP]);
+const AIRWAY = curve([TRACHEA_TOP, O(0, 1.52, 0.02), O(0.17, 1.37, 0.02), O(0.32, 1.3, 0.04), GHON]);
+const LYMPH = curve([GHON, O(0.3, 1.36, 0.04), HILAR_L, O(0.08, 1.75, 0.0), V(0.13, 2.12, 0.0), CERVICAL_L[0], CERVICAL_L[1]]);
+const EXHALE = curve([APEX, O(0.17, 1.5, 0.02), O(0, 1.52, 0.02), TRACHEA_TOP, V(0, 2.3, 0.08), V(0, 2.55, 0.14), V(0, 2.64, 0.42), V(0, 2.65, 0.75), V(0, 2.66, 1.0), V(0, 2.66, CONTACT_Z - 0.5)]);
 
 /* ════════════════════════════════════════════════════════════════
    The story
@@ -60,7 +68,9 @@ const smooth = (x) => x * x * (3 - 2 * x);
 const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, transparent: true, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 });
 
 function Human({ material, order = 10, ...props }) {
-  const parts = useMemo(() => makeHuman(), []);
+  const real = useHumanGeometry();
+  const fallback = useMemo(() => makeHuman(), []);
+  const parts = real ? [real] : fallback;
   return (
     <group {...props}>
       {parts.map((g, i) => (
@@ -89,7 +99,7 @@ function Body({ jr }) {
 
 function Organs({ jr }) {
   const { lungL, lungR, tree, upper, lungMat, airMat } = useMemo(() => {
-    const upperCurve = curve([V(0, 2.725, 0.33), V(0, 2.83, 0.2), V(0, 2.74, 0.0), V(0, 2.5, 0.02), V(0, 2.27, 0.06), V(0, 1.92, 0.02)]);
+    const upperCurve = curve([V(0, 2.72, 0.48), V(0, 2.74, 0.3), V(0, 2.62, 0.12), V(0, 2.42, 0.1), V(0, 2.27, 0.08), TRACHEA_TOP]);
     return {
       lungL: makeLungGeometry(1, 64),
       lungR: makeLungGeometry(-1, 64),
@@ -103,7 +113,7 @@ function Organs({ jr }) {
   const heart = useRef();
   useFrame(({ clock }) => {
     const b = jr.current.breath || 0;
-    if (chest.current) chest.current.scale.set(0.36 * (1 + b * 0.03), 0.36 * (1 + b * 0.02), 0.36 * (1 + b * 0.03));
+    if (chest.current) chest.current.scale.set(CH_S * (1 + b * 0.03), CH_S * (1 + b * 0.02), CH_S * (1 + b * 0.03));
     if (heart.current) {
       const beat = Math.max(0, Math.sin(clock.elapsedTime * 10)) ** 6;
       heart.current.scale.setScalar(1 + beat * 0.08);
@@ -111,7 +121,7 @@ function Organs({ jr }) {
   });
   return (
     <group>
-      <group ref={chest} position={[0, 1.25, 0]} scale={0.36}>
+      <group ref={chest} position={[0, CH_Y, 0]} scale={CH_S}>
         <mesh geometry={lungR} material={lungMat} position={[-0.74, 0, 0]} scale={1.04} />
         <mesh geometry={lungL} material={lungMat} position={[0.7, 0, 0]} scale={[0.96, 1, 1]} />
         <mesh geometry={tree} material={airMat} />

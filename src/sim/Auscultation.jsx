@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { makeHuman } from './humanGeo';
+import { useHumanGeometry } from './humanModel';
 import { Hand, Headphones, Stethoscope, Volume2 } from 'lucide-react';
 import { chestPoints, findingsAt, vitals } from './simData';
 import { getAnalyser, getCtx, percuss, setVolume, startBreathing } from './audio';
@@ -20,11 +21,13 @@ const TOOLS = [
    same 300×380 coordinate space as the exam points in simData.
    SVG (x, y) ↔ world: X = (x − 150) / K,  Y = TOP − y / K
    ───────────────────────────────────────────────────────────── */
-const K = 140;
-const TOP = 2.66;
+const K = 118;
+const TOP = 3.5;
 
 function BodyModel({ view }) {
-  const parts = useMemo(() => makeHuman({ withHead: false, surfaceDetail: false }), []);
+  const real = useHumanGeometry();
+  const fallback = useMemo(() => makeHuman({ withHead: false, surfaceDetail: false }), []);
+  const parts = real ? [real] : fallback;
   const skin = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -41,12 +44,6 @@ function BodyModel({ view }) {
       {parts.map((g, i) => (
         <mesh key={i} geometry={g} material={skin} />
       ))}
-      {view === 'front' && (
-        <mesh position={[0, 0.52, 0.286]} scale={[1, 1.4, 0.5]}>
-          <sphereGeometry args={[0.014, 16, 12]} />
-          <meshStandardMaterial color="#3a2018" roughness={0.9} />
-        </mesh>
-      )}
     </group>
   );
 }
@@ -198,8 +195,8 @@ export default function Auscultation({ onDone }) {
           <Torso view={view}>
             {tool === 'palpate' && view === 'front' && (
               <g onClick={() => (setNeck(true), onDone?.())} className="cursor-pointer">
-                <circle cx="163" cy="47" r="11" fill="rgba(224,163,58,.15)" stroke="#E0A33A" strokeDasharray="3 3" />
-                <text x="179" y="43" fill="#E0A33A" fontSize="11" fontFamily="Inter">left cervical chain</text>
+                <circle cx="168" cy="146" r="10" fill="rgba(224,163,58,.15)" stroke="#E0A33A" strokeDasharray="3 3" />
+                <text x="182" y="142" fill="#E0A33A" fontSize="11" fontFamily="Inter">left cervical chain</text>
               </g>
             )}
             {tool !== 'palpate' &&
