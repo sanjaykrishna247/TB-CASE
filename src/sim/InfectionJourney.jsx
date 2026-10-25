@@ -165,18 +165,33 @@ function Heart() {
     body.rotateZ(0.7);
     body.rotateX(-0.25);
 
-    const tube = (pts, r) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((q) => new THREE.Vector3(...q))), 48, r, 12, false);
+    // tapered tube along a smooth curve (thick at the heart, thinner further away)
+    const tube = (pts, r0, r1 = r0) => {
+      const c = new THREE.CatmullRomCurve3(pts.map((q) => new THREE.Vector3(...q)), false, 'centripetal');
+      const g = new THREE.TubeGeometry(c, 64, 1, 14, false);
+      const pos = g.attributes.position;
+      const seg = 65;
+      const centre = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        const ring = Math.floor(i / 15); // 15 vertices per ring (14 radial + seam)
+        const t = Math.min(1, ring / (seg - 1));
+        c.getPointAt(t, centre);
+        const r = r0 + (r1 - r0) * t;
+        pos.setXYZ(i, centre.x + (pos.getX(i) - centre.x) * r, centre.y + (pos.getY(i) - centre.y) * r, centre.z + (pos.getZ(i) - centre.z) * r);
+      }
+      g.computeVertexNormals();
+      return g;
+    };
     const vessels = [
-      // ascending aorta → arch (to the left and back) → descending aorta
-      tube([[-0.02, 0.1, 0.02], [-0.03, 0.22, 0.02], [0.02, 0.3, -0.03], [0.08, 0.27, -0.09], [0.1, 0.15, -0.12], [0.1, -0.15, -0.13]], 0.028),
-      // pulmonary trunk, splitting towards both lungs
-      tube([[0.04, 0.08, 0.06], [0.06, 0.18, 0.05], [0.04, 0.24, 0.0], [-0.12, 0.25, -0.02]], 0.022),
-      tube([[0.05, 0.22, 0.02], [0.14, 0.24, -0.01]], 0.019),
-      // superior vena cava
-      tube([[-0.09, 0.05, 0.0], [-0.09, 0.3, -0.01]], 0.02),
+      // aorta: rises from the base, arches back over the left main bronchus, then descends behind the heart
+      tube([[-0.01, 0.06, 0.03], [-0.02, 0.17, 0.03], [0.02, 0.25, -0.01], [0.07, 0.25, -0.07], [0.09, 0.18, -0.11], [0.09, -0.12, -0.12]], 0.024, 0.018),
+      // pulmonary trunk: short, in front of the aorta, dividing under the arch
+      tube([[0.04, 0.06, 0.06], [0.05, 0.14, 0.05], [0.03, 0.18, 0.02]], 0.02, 0.017),
+      // superior vena cava on the right
+      tube([[-0.08, 0.04, 0.01], [-0.085, 0.16, 0.0], [-0.085, 0.27, -0.01]], 0.017, 0.015),
     ];
-    const mat = new THREE.MeshStandardMaterial({ color: '#8f2a2a', emissive: '#3a0a0a', roughness: 0.55, transparent: true, opacity: 0.6, depthWrite: false });
-    const vmat = new THREE.MeshStandardMaterial({ color: '#a8484a', emissive: '#3a1010', roughness: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
+    const mat = new THREE.MeshStandardMaterial({ color: '#7d2626', emissive: '#2a0808', roughness: 0.6, transparent: true, opacity: 0.5, depthWrite: false });
+    const vmat = new THREE.MeshStandardMaterial({ color: '#8a3434', emissive: '#2a0a0a', roughness: 0.55, transparent: true, opacity: 0.32, depthWrite: false });
     return { body, vessels, mat, vmat };
   }, []);
   return (

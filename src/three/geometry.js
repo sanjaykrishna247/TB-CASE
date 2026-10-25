@@ -53,9 +53,32 @@ export function makeLungGeometry(side, segments = 80) {
   return g;
 }
 
-/** Trachea + recursively branching bronchi merged into one geometry. */
+/**
+ * Point-in-lung test for the two lungs exactly as they are placed in the scenes
+ * (right lung at x −0.74, scale 1.04; left lung at x +0.70, scale 0.96·1·1).
+ * Uses ray-crossing parity against the actual lung surfaces.
+ */
+function makeInsideLungs() {
+  const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  const right = new THREE.Mesh(makeLungGeometry(-1, 48), mat);
+  right.position.set(-0.74, 0, 0);
+  right.scale.setScalar(1.04);
+  const left = new THREE.Mesh(makeLungGeometry(1, 48), mat);
+  left.position.set(0.7, 0, 0);
+  left.scale.set(0.96, 1, 1);
+  [right, left].forEach((m) => m.updateMatrixWorld(true));
+  const rc = new THREE.Raycaster();
+  const dir = new THREE.Vector3(0.013, 1, 0.021).normalize();
+  return (p) => [right, left].some((m) => {
+    rc.set(p, dir);
+    return rc.intersectObject(m, false).length % 2 === 1;
+  });
+}
+
+/** Trachea + recursively branching bronchi merged into one geometry; every branch stays inside the lungs. */
 export function makeBronchialTree() {
   const parts = [];
+  const inside = makeInsideLungs();
   const tube = (a, b, r0, bend) => {
     const mid = a.clone().lerp(b, 0.5).add(bend);
     const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
@@ -70,9 +93,23 @@ export function makeBronchialTree() {
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) - 0.5;
 
-  const branch = (start, dir, len, r, depth, side) => {
-    const end = start.clone().add(dir.clone().multiplyScalar(len));
-    tube(start, end, r, new THREE.Vector3(rnd() * 0.08, rnd() * 0.08, rnd() * 0.08));
+  // a branch end is acceptable if it, a point a little beyond it (tube thickness) and the bend are all inside
+  const fits = (start, end, dir, bend, margin) =>
+    inside(end) && inside(end.clone().addScaledVector(dir, margin)) && inside(start.clone().lerp(end, 0.5).addScaledVector(bend, 0.5));
+
+  const branch = (start, dir, len, r, depth, side, test = true) => {
+    const bend = new THREE.Vector3(rnd() * 0.06, rnd() * 0.06, rnd() * 0.06);
+    let end = null;
+    for (const f of test ? [1, 0.75, 0.55, 0.38] : [1]) {
+      const e = start.clone().addScaledVector(dir, len * f);
+      if (!test || fits(start, e, dir, bend, r * 2.2 + 0.03)) {
+        end = e;
+        len *= f;
+        break;
+      }
+    }
+    if (!end) return; // would leave the lung — prune this branch
+    tube(start, end, r, bend);
     if (depth === 0) return;
     for (let k = 0; k < 2; k++) {
       const spread = (k === 0 ? 1 : -1) * (0.45 + rnd() * 0.25);
@@ -81,18 +118,18 @@ export function makeBronchialTree() {
         .applyAxisAngle(new THREE.Vector3(0, 0, 1), spread * (k === 0 ? 1 : 0.8))
         .applyAxisAngle(new THREE.Vector3(0, 1, 0), rnd() * 1.2)
         .normalize();
-      // keep branches growing outward and mostly downward, inside the lung
+      // keep branches growing outward and mostly downward
       nd.x = Math.abs(nd.x) * side * (k === 0 ? 1 : 0.6) + side * 0.15;
       nd.normalize();
       branch(end, nd, len * 0.72, r * 0.68, depth - 1, side);
     }
   };
-  // Main bronchi (right is steeper & wider)
-  branch(carina, new THREE.Vector3(-0.62, -0.75, 0).normalize(), 0.62, 0.06, 4, -1);
-  branch(carina, new THREE.Vector3(0.72, -0.62, 0).normalize(), 0.66, 0.055, 4, 1);
+  // Main bronchi run through the mediastinum to the hila, so they are not tested
+  branch(carina, new THREE.Vector3(-0.62, -0.75, 0).normalize(), 0.62, 0.06, 4, -1, false);
+  branch(carina, new THREE.Vector3(0.72, -0.62, 0).normalize(), 0.66, 0.055, 4, 1, false);
   // Upper-lobe bronchi reaching toward the apices
-  branch(new THREE.Vector3(-0.3, 0.55, 0.05), new THREE.Vector3(-0.4, 0.9, 0).normalize(), 0.42, 0.04, 2, -1);
-  branch(new THREE.Vector3(0.38, 0.5, 0.05), new THREE.Vector3(0.45, 0.88, 0.1).normalize(), 0.42, 0.04, 2, 1);
+  branch(new THREE.Vector3(-0.3, 0.55, 0.05), new THREE.Vector3(-0.4, 0.9, 0).normalize(), 0.42, 0.04, 2, -1, false);
+  branch(new THREE.Vector3(0.38, 0.5, 0.05), new THREE.Vector3(0.45, 0.88, 0.1).normalize(), 0.42, 0.04, 2, 1, false);
   return mergeGeometries(parts);
 }
 
