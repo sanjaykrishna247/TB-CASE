@@ -54,7 +54,7 @@ export default function Preloader() {
                 animate={{ y: 0 }}
                 transition={{ delay: 0.9, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               >
-                {config.eventName.charAt(0) + config.eventName.slice(1).toLowerCase()}
+                TB Case Study
               </motion.div>
             </div>
             <motion.p className="mt-3 text-sm text-ivory/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }}>

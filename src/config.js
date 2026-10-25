@@ -5,7 +5,6 @@
 const config = {
   presenterName: '[FRIEND NAME]',
   className: 'II MBBS · 2025 Batch',
-  eventName: 'VINMANTRA',
   collegeName: "Vinayaka Mission's Kirupananda Variyar Medical College and Hospitals, Salem",
   collegeShort: 'VMKVMC&H, Salem',
   departmentName: 'Dept. of Pathology · Microbiology · Pharmacology',

@@ -35,7 +35,7 @@ export default function Footer() {
             <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-ivory/45">Presented by</p>
             <p className="mt-2 font-serif text-3xl">{config.presenterName}</p>
             <p className="mt-4 text-[14.5px] leading-relaxed text-ivory/60">
-              {config.eventName} · {config.className}
+              {config.className}
               <br />
               {config.departmentName}
               <br />

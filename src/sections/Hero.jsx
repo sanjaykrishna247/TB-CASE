@@ -46,7 +46,7 @@ export default function Hero() {
       <motion.div style={{ opacity: textOpacity, y: textY }} className="container-x pointer-events-none relative z-10 pb-24 pt-28">
         <div className="max-w-2xl">
           <motion.p {...fade(loaded, 0.1)} className="text-[13px] font-medium uppercase tracking-[0.2em] text-saffron">
-            {config.eventName} · {config.className}
+            {config.className}
           </motion.p>
 
           <h1 className="mt-6 font-serif font-medium leading-[0.95] tracking-[-0.03em]">

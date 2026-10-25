@@ -1,4 +1,4 @@
-# TB Case Study — VINMANTRA presentation site
+# TB Case Study — presentation site
 
 An animated single-page presentation for the Pulmonary Tuberculosis case study
 (II MBBS 2025 batch · Pathology · Microbiology · Pharmacology).
@@ -29,7 +29,7 @@ fonts are used if there's no connection.
 | key | what it changes |
 |---|---|
 | `presenterName` | "Presented by" in the footer (currently `[FRIEND NAME]`) |
-| `className`, `eventName` | hero badges, footer |
+| `className` | hero badge, footer |
 | `collegeName`, `departmentName` | hero footer line, footer |
 | `preloaderMs` | length of the intro animation |
 | `highlightMs` | how long the answer stays brightly highlighted after a jump |
