@@ -3,7 +3,17 @@
  * Everything here appears in the hero badge, navbar and footer.
  */
 const config = {
-  presenterName: '[FRIEND NAME]',
+  // Presenting team (shown in the Thank-you section)
+  presenters: [
+    'Gokul G',
+    'A. Jeyashree',
+    'Aashriya P',
+    'Abhinand Anu',
+    'Abhinesh M',
+    'Akshara M',
+    'Akshay Chanabasu Janagoud',
+    'Akshaya A',
+  ],
   className: 'Group 1 · II MBBS · 2025 Batch',
   collegeName: "Vinayaka Mission's Kirupananda Variyar Medical College and Hospitals, Salem",
   collegeShort: 'VMKVMC&H, Salem',

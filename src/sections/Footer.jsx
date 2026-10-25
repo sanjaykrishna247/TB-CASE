@@ -43,7 +43,13 @@ export default function Footer() {
               </p>
             </div>
             <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-ivory/45">Presented by</p>
-            <p className="mt-2 font-serif text-3xl">{config.presenterName}</p>
+            <ul className="mt-3 grid grid-cols-1 gap-x-8 gap-y-1.5 sm:grid-cols-2">
+              {config.presenters.map((n) => (
+                <li key={n} className="font-serif text-[1.3rem] leading-snug text-ivory">
+                  {n}
+                </li>
+              ))}
+            </ul>
             <p className="mt-4 text-[14.5px] leading-relaxed text-ivory/60">
               {config.className}
               <br />
