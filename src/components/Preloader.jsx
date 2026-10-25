@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import config from '../config';
 import { useApp } from '../AppContext';
@@ -13,6 +13,12 @@ export default function Preloader() {
   const { setLoaded, reduced } = useApp();
   const [show, setShow] = useState(true);
   const [fontReady, setFontReady] = useState(false);
+  const textRef = useRef(null);
+  const [tw, setTw] = useState(0); // measured width of the written name (SVG units)
+  const tx0 = 500 - tw / 2;
+  useEffect(() => {
+    if (fontReady && textRef.current) setTw(textRef.current.getComputedTextLength());
+  }, [fontReady]);
 
   // wait for the script font so the handwriting never starts in a fallback font
   useEffect(() => {
@@ -58,35 +64,58 @@ export default function Preloader() {
               <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
             </motion.div>
 
-            {/* cursive name, revealed left → right with a glowing pen nib */}
-            <svg viewBox="0 0 1000 140" className="mt-6 w-full overflow-visible" aria-label={NAME}>
+            {/* cursive name at its natural width, revealed left → right with a glowing pen nib */}
+            <svg viewBox="0 0 1000 170" className="mt-6 w-full overflow-visible" aria-label={NAME}>
               <defs>
                 <clipPath id="writeClip">
-                  <motion.rect x="0" y="0" height="140" initial={{ width: 0 }} animate={fontReady ? { width: 1000 } : {}} transition={write} />
+                  <motion.rect x={tx0 - 20} y="0" height="140" initial={{ width: 0 }} animate={fontReady && tw ? { width: tw + 40 } : {}} transition={write} />
                 </clipPath>
                 <linearGradient id="ink" x1="0" x2="1">
-                  <stop offset="0" stopColor="#F6E7D6" />
+                  <stop offset="0" stopColor="#F8EBDA" />
+                  <stop offset=".55" stopColor="#EED2A0" />
                   <stop offset="1" stopColor="#E0A33A" />
                 </linearGradient>
               </defs>
               <text
+                ref={textRef}
                 x="500"
                 y="92"
                 textAnchor="middle"
-                textLength="920"
-                lengthAdjust="spacingAndGlyphs"
                 fontFamily='"Great Vibes", cursive'
-                fontSize="74"
+                fontSize="64"
+                letterSpacing="0.6"
+                wordSpacing="14"
                 fill="url(#ink)"
                 clipPath="url(#writeClip)"
-                style={{ opacity: fontReady ? 1 : 0 }}
+                style={{ opacity: fontReady ? 1 : 0, filter: 'drop-shadow(0 2px 10px rgba(224,163,58,.18))' }}
               >
                 {NAME}
               </text>
-              <motion.g initial={{ x: 40, opacity: 0 }} animate={fontReady ? { x: [40, 960], opacity: [0, 1, 1, 0] } : {}} transition={{ ...write, opacity: { duration: WRITE_DUR, delay: WRITE_AT, times: [0, 0.05, 0.92, 1] } }}>
-                <circle cx="0" cy="78" r="5" fill="#FFE7B0" />
-                <circle cx="0" cy="78" r="14" fill="#E0A33A" opacity="0.35" />
+              <motion.g
+                initial={{ x: tx0, opacity: 0 }}
+                animate={fontReady && tw ? { x: [tx0, tx0 + tw], opacity: [0, 1, 1, 0] } : {}}
+                transition={{ ...write, opacity: { duration: WRITE_DUR, delay: WRITE_AT, times: [0, 0.05, 0.92, 1] } }}
+              >
+                <circle cx="0" cy="80" r="4.5" fill="#FFE7B0" />
+                <circle cx="0" cy="80" r="13" fill="#E0A33A" opacity="0.3" />
               </motion.g>
+              {/* flourish: hairlines out from a small diamond, drawn once the name is written */}
+              <g transform="translate(500 132)">
+                {[-1, 1].map((d) => (
+                  <motion.path
+                    key={d}
+                    d={`M${d * 14} 0 C ${d * 90} -6, ${d * 170} 6, ${d * 260} 0`}
+                    fill="none"
+                    stroke="#E0A33A"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={fontReady ? { pathLength: 1, opacity: 0.75 } : {}}
+                    transition={{ duration: 0.8, delay: WRITE_AT + WRITE_DUR - 0.1, ease: 'easeOut' }}
+                  />
+                ))}
+                <motion.path d="M0 -5 L5 0 L0 5 L-5 0 Z" fill="#E0A33A" initial={{ scale: 0 }} animate={fontReady ? { scale: 1 } : {}} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2, type: 'spring', stiffness: 300 }} />
+              </g>
             </svg>
 
             <motion.div className="mt-6 w-[min(520px,80vw)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2 }}>
