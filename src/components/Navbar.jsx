@@ -31,6 +31,10 @@ export default function Navbar() {
     >
       <nav className="container-x flex h-[64px] items-center justify-between" aria-label="Main">
         <button onClick={() => jumpTo('hero', { highlight: false })} className="flex items-center gap-2.5" aria-label="Back to top">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ivory ring-1 ring-black/5">
+            <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
+          </span>
+          <span className="mx-0.5 h-6 w-px bg-current opacity-15" />
           <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden>
             <path d="M2 17h7l2.5-6 3.5 12 3-8 2 2h10" fill="none" stroke={dark ? '#E0A33A' : '#B8432F'} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

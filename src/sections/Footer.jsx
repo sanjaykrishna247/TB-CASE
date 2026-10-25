@@ -32,6 +32,16 @@ export default function Footer() {
 
         <div className="mt-14 grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
+            <div className="mb-6 flex items-center gap-4">
+              <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-ivory shadow-[0_0_0_6px_rgba(241,228,211,.06),0_0_40px_-8px_rgba(224,163,58,.35)]">
+                <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
+              </span>
+              <p className="font-serif text-[1.15rem] italic leading-snug text-ivory/85">
+                Vinayaka Mission&apos;s
+                <br />
+                Research Foundation
+              </p>
+            </div>
             <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-ivory/45">Presented by</p>
             <p className="mt-2 font-serif text-3xl">{config.presenterName}</p>
             <p className="mt-4 text-[14.5px] leading-relaxed text-ivory/60">
