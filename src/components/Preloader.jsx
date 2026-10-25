@@ -55,7 +55,7 @@ export default function Preloader() {
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className="relative grid h-32 w-32 place-items-center rounded-full bg-ivory shadow-[0_0_0_6px_rgba(241,228,211,.08),0_0_50px_-6px_rgba(224,163,58,.45)] sm:h-40 sm:w-40"
             >
-              <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[64%] w-auto object-contain" />
+              <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
             </motion.div>
 
             {/* cursive name, revealed left → right with a glowing pen nib */}
