@@ -6,7 +6,11 @@ import { useApp } from '../AppContext';
 const ECG = 'M0 60 H200 l16 -7 l12 7 H270 l10 -44 l16 92 l14 -70 l10 22 H370 l24 -12 l22 12 H600';
 const NAME = "Vinayaka Mission's Research Foundation";
 const WRITE_AT = 0.7; // s — handwriting starts
-const WRITE_DUR = 2.4; // s — time to write the name
+const WRITE_DUR = 2.6; // s — time to write both lines
+const LINES = [
+  { text: "Vinayaka Mission's", y: 78, w: 540, at: WRITE_AT, dur: WRITE_DUR * 0.48 },
+  { text: 'Research Foundation', y: 168, w: 600, at: WRITE_AT + WRITE_DUR * 0.5, dur: WRITE_DUR * 0.5 },
+];
 
 /** Crest → name handwritten in cursive → heartbeat line + title → lift away. Click or any key skips. */
 export default function Preloader() {
@@ -48,48 +52,48 @@ export default function Preloader() {
           aria-label="Loading presentation"
         >
           <div className="relative flex w-[min(820px,92vw)] flex-col items-center text-center">
-            {/* crest on an ivory disc so its blue and red read on the dark screen */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="relative grid h-32 w-32 place-items-center rounded-full bg-ivory shadow-[0_0_0_6px_rgba(241,228,211,.08),0_20px_60px_-10px_rgba(224,163,58,.35)] sm:h-40 sm:w-40"
-            >
-              <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[82%] w-auto object-contain" />
-            </motion.div>
-
-            {/* cursive name, revealed left → right with a glowing pen nib */}
-            <svg viewBox="0 0 1000 140" className="mt-6 w-full overflow-visible" aria-label={NAME}>
-              <defs>
-                <clipPath id="writeClip">
-                  <motion.rect x="0" y="0" height="140" initial={{ width: 0 }} animate={fontReady ? { width: 1000 } : {}} transition={write} />
-                </clipPath>
-                <linearGradient id="ink" x1="0" x2="1">
-                  <stop offset="0" stopColor="#F6E7D6" />
-                  <stop offset="1" stopColor="#E0A33A" />
-                </linearGradient>
-              </defs>
-              <text
-                x="500"
-                y="92"
-                textAnchor="middle"
-                textLength="920"
-                lengthAdjust="spacingAndGlyphs"
-                fontFamily='"Great Vibes", cursive'
-                fontSize="74"
-                fill="url(#ink)"
-                clipPath="url(#writeClip)"
-                style={{ opacity: fontReady ? 1 : 0 }}
+            {/* lockup: crest + name written in two lines beside it, centred as one group */}
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="relative grid h-28 w-28 shrink-0 place-items-center rounded-full bg-ivory shadow-[0_0_0_6px_rgba(241,228,211,.08),0_0_50px_-6px_rgba(224,163,58,.45)] sm:h-36 sm:w-36"
               >
-                {NAME}
-              </text>
-              <motion.g initial={{ x: 40, opacity: 0 }} animate={fontReady ? { x: [40, 960], opacity: [0, 1, 1, 0] } : {}} transition={{ ...write, opacity: { duration: WRITE_DUR, delay: WRITE_AT, times: [0, 0.05, 0.92, 1] } }}>
-                <circle cx="0" cy="78" r="5" fill="#FFE7B0" />
-                <circle cx="0" cy="78" r="14" fill="#E0A33A" opacity="0.35" />
-              </motion.g>
-            </svg>
+                <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[82%] w-auto object-contain" />
+              </motion.div>
+              <svg viewBox="0 0 620 190" className="w-[min(460px,84vw)] overflow-visible" aria-label={NAME}>
+                <defs>
+                  {LINES.map((l, i) => (
+                    <clipPath key={i} id={`writeClip${i}`}>
+                      <motion.rect x="-10" y={l.y - 75} height="100" initial={{ width: 0 }} animate={fontReady ? { width: l.w + 30 } : {}} transition={{ ...write, duration: l.dur, delay: l.at }} />
+                    </clipPath>
+                  ))}
+                  <linearGradient id="ink" x1="0" x2="1">
+                    <stop offset="0" stopColor="#F6E7D6" />
+                    <stop offset="1" stopColor="#E0A33A" />
+                  </linearGradient>
+                </defs>
+                {LINES.map((l, i) => (
+                  <g key={i}>
+                    <text x="0" y={l.y} textLength={l.w} lengthAdjust="spacingAndGlyphs" fontFamily='"Great Vibes", cursive' fontSize="78" fill="url(#ink)" clipPath={`url(#writeClip${i})`} style={{ opacity: fontReady ? 1 : 0 }}>
+                      {l.text}
+                    </text>
+                    {/* glowing pen nib following the writing */}
+                    <motion.g
+                      initial={{ x: 0, opacity: 0 }}
+                      animate={fontReady ? { x: [0, l.w], opacity: [0, 1, 1, 0] } : {}}
+                      transition={{ ...write, duration: l.dur, delay: l.at, opacity: { duration: l.dur, delay: l.at, times: [0, 0.06, 0.9, 1] } }}
+                    >
+                      <circle cx="0" cy={l.y - 14} r="5" fill="#FFE7B0" />
+                      <circle cx="0" cy={l.y - 14} r="14" fill="#E0A33A" opacity="0.35" />
+                    </motion.g>
+                  </g>
+                ))}
+              </svg>
+            </div>
 
-            <motion.div className="mt-6 w-[min(520px,80vw)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2 }}>
+            <motion.div className="mt-10 w-[min(520px,80vw)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2 }}>
               <svg viewBox="0 0 600 120" className="w-full overflow-visible">
                 <motion.path
                   d={ECG}
