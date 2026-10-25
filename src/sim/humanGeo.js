@@ -22,30 +22,32 @@ const TORSO = [
   [2.18, 0.15, 0.13, 0.0], // neck base
 ];
 
+// smooth Catmull-Rom interpolation through the profile keys (no banding between keys)
 const lerpProfile = (y) => {
-  for (let i = 0; i < TORSO.length - 1; i++) {
-    const a = TORSO[i];
-    const b = TORSO[i + 1];
-    if (y >= a[0] && y <= b[0]) {
-      const t = (y - a[0]) / (b[0] - a[0]);
-      const s = t * t * (3 - 2 * t);
-      return a.map((v, k) => v + (b[k] - v) * s);
-    }
-  }
-  return TORSO[TORSO.length - 1];
+  const n = TORSO.length;
+  let i = 0;
+  while (i < n - 2 && y > TORSO[i + 1][0]) i++;
+  const p1 = TORSO[i];
+  const p2 = TORSO[i + 1];
+  const p0 = TORSO[Math.max(0, i - 1)];
+  const p3 = TORSO[Math.min(n - 1, i + 2)];
+  const t = Math.min(1, Math.max(0, (y - p1[0]) / (p2[0] - p1[0])));
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return p1.map((_, k) => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3));
 };
 
 /** loft a closed surface through superellipse cross-sections */
 function torso() {
-  const rows = 70;
-  const cols = 72;
+  const rows = 160;
+  const cols = 96;
   const pos = [];
   const idx = [];
   const y0 = TORSO[0][0];
   const y1 = TORSO[TORSO.length - 1][0];
   for (let r = 0; r <= rows; r++) {
     const y = y0 + ((y1 - y0) * r) / rows;
-    const [, w, d, bulge] = lerpProfile(y);
+    const [, w, d] = lerpProfile(y);
     for (let c = 0; c < cols; c++) {
       const a = (c / cols) * Math.PI * 2;
       const ca = Math.cos(a);
@@ -54,11 +56,28 @@ function torso() {
       const n = 2.6;
       const x = Math.sign(ca) * Math.abs(ca) ** (2 / n) * w;
       let z = Math.sign(sa) * Math.abs(sa) ** (2 / n) * d;
-      // pectorals / shoulder blades
-      if (sa > 0) z += bulge * Math.exp(-((Math.abs(x) - w * 0.42) ** 2) / 0.03) * sa;
-      else z -= 0.015 * Math.exp(-((Math.abs(x) - w * 0.45) ** 2) / 0.02) * -sa * (y > 1.4 && y < 1.95 ? 1 : 0);
-      // spine groove
-      if (sa < 0) z += 0.012 * Math.exp(-(x * x) / 0.004) * -sa;
+      // surface anatomy — all smooth gaussians so there are no creases
+      const ax = Math.abs(x);
+      const g = (v, m, sd) => Math.exp(-((v - m) ** 2) / (2 * sd * sd));
+      if (sa > 0) {
+        const front = sa ** 1.5;
+        let dz = 0;
+        dz += 0.075 * g(ax, 0.25, 0.12) * g(y, 1.6, 0.16); // pectoralis major
+        dz -= 0.018 * g(ax, 0.26, 0.14) * g(y, 1.38, 0.06); // shadow under the pecs
+        dz -= 0.014 * g(x, 0, 0.03) * g(y, 1.55, 0.3); // sternal groove
+        dz += 0.022 * g(ax, 0.1, 0.055) * g(y, 0.85, 0.32); // rectus abdominis
+        dz -= 0.008 * g(x, 0, 0.018) * g(y, 0.8, 0.4); // linea alba
+        dz += 0.012 * g(ax, 0.42, 0.06) * g(y, 1.18, 0.12); // serratus
+        z += dz * front;
+      } else {
+        const back = (-sa) ** 1.5;
+        let dz = 0;
+        dz += 0.045 * g(ax, 0.3, 0.12) * g(y, 1.62, 0.2); // shoulder blades
+        dz += 0.03 * g(ax, 0.2, 0.15) * g(y, 1.98, 0.1); // trapezius
+        dz -= 0.016 * g(x, 0, 0.025); // spinal groove
+        dz += 0.02 * g(ax, 0.075, 0.045) * g(y, 0.7, 0.4); // erector spinae
+        z -= dz * back;
+      }
       pos.push(x, y, z);
     }
   }
@@ -245,8 +264,10 @@ function clavicles() {
   });
 }
 
-export function makeHuman() {
-  const parts = [torso(), neck(), head(), ...eyes(), ...lids(), ...ear(-1), ...ear(1), adamsApple(), ...clavicles()];
+export function makeHuman({ withHead = true, surfaceDetail = true } = {}) {
+  const parts = [torso(), neck()];
+  if (surfaceDetail) parts.push(adamsApple(), ...clavicles());
+  if (withHead) parts.push(head(), ...eyes(), ...lids(), ...ear(-1), ...ear(1));
   for (const s of [-1, 1]) {
     const sh = new THREE.Vector3(s * 0.74, 1.96, -0.01);
     const el = new THREE.Vector3(s * 0.86, 1.05, -0.04);
