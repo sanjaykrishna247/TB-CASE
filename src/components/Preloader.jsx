@@ -70,10 +70,11 @@ export default function Preloader() {
                 <clipPath id="writeClip">
                   <motion.rect x={tx0 - 20} y="0" height="140" initial={{ width: 0 }} animate={fontReady && tw ? { width: tw + 40 } : {}} transition={write} />
                 </clipPath>
-                <linearGradient id="ink" x1="0" x2="1">
-                  <stop offset="0" stopColor="#F8EBDA" />
-                  <stop offset=".55" stopColor="#EED2A0" />
-                  <stop offset="1" stopColor="#E0A33A" />
+                {/* underline: fades in from both ends towards the centre */}
+                <linearGradient id="rule" x1="0" x2="1">
+                  <stop offset="0" stopColor="#F1E4D3" stopOpacity="0" />
+                  <stop offset=".5" stopColor="#F1E4D3" stopOpacity=".75" />
+                  <stop offset="1" stopColor="#F1E4D3" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <text
@@ -85,9 +86,9 @@ export default function Preloader() {
                 fontSize="64"
                 letterSpacing="0.6"
                 wordSpacing="14"
-                fill="url(#ink)"
+                fill="#F1E4D3"
                 clipPath="url(#writeClip)"
-                style={{ opacity: fontReady ? 1 : 0, filter: 'drop-shadow(0 2px 10px rgba(224,163,58,.18))' }}
+                style={{ opacity: fontReady ? 1 : 0 }}
               >
                 {NAME}
               </text>
@@ -96,25 +97,35 @@ export default function Preloader() {
                 animate={fontReady && tw ? { x: [tx0, tx0 + tw], opacity: [0, 1, 1, 0] } : {}}
                 transition={{ ...write, opacity: { duration: WRITE_DUR, delay: WRITE_AT, times: [0, 0.05, 0.92, 1] } }}
               >
-                <circle cx="0" cy="80" r="4.5" fill="#FFE7B0" />
-                <circle cx="0" cy="80" r="13" fill="#E0A33A" opacity="0.3" />
+                <circle cx="0" cy="80" r="4" fill="#FFF6EA" />
+                <circle cx="0" cy="80" r="12" fill="#F1E4D3" opacity="0.22" />
               </motion.g>
-              {/* flourish: hairlines out from a small diamond, drawn once the name is written */}
-              <g transform="translate(500 132)">
-                {[-1, 1].map((d) => (
-                  <motion.path
-                    key={d}
-                    d={`M${d * 14} 0 C ${d * 90} -6, ${d * 170} 6, ${d * 260} 0`}
-                    fill="none"
-                    stroke="#E0A33A"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={fontReady ? { pathLength: 1, opacity: 0.75 } : {}}
-                    transition={{ duration: 0.8, delay: WRITE_AT + WRITE_DUR - 0.1, ease: 'easeOut' }}
-                  />
-                ))}
-                <motion.path d="M0 -5 L5 0 L0 5 L-5 0 Z" fill="#E0A33A" initial={{ scale: 0 }} animate={fontReady ? { scale: 1 } : {}} transition={{ delay: WRITE_AT + WRITE_DUR - 0.2, type: 'spring', stiffness: 300 }} />
+              {/* underline: one symmetric rule (≈ half the name's width) with a small diamond, drawn from the centre out */}
+              <g transform="translate(500 124)">
+                <motion.rect
+                  x={-(tw || 600) * 0.28}
+                  y="-0.6"
+                  width={(tw || 600) * 0.56}
+                  height="1.2"
+                  fill="url(#rule)"
+                  style={{ transformOrigin: '0px 0px', transformBox: 'view-box' }}
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={fontReady ? { scaleX: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.9, delay: WRITE_AT + WRITE_DUR - 0.1, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <motion.rect
+                  x="-4"
+                  y="-4"
+                  width="8"
+                  height="8"
+                  transform="rotate(45)"
+                  fill="#17110F"
+                  stroke="#F1E4D3"
+                  strokeWidth="1.2"
+                  initial={{ opacity: 0 }}
+                  animate={fontReady ? { opacity: 1 } : {}}
+                  transition={{ delay: WRITE_AT + WRITE_DUR - 0.1, duration: 0.4 }}
+                />
               </g>
             </svg>
 
