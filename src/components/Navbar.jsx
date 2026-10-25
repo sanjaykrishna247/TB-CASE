@@ -34,11 +34,11 @@ export default function Navbar() {
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-ivory ring-1 ring-black/5">
             <img src="/brand/crest.png" alt="Vinayaka Mission's Research Foundation crest" className="h-[72%] w-auto -translate-y-[5%] object-contain" />
           </span>
-          <span className={`font-serif text-[19px] font-medium tracking-tight ${dark ? 'text-ivory' : 'text-ink'}`}>
+          <span className={`hidden whitespace-nowrap font-serif text-[19px] sm:inline font-medium tracking-tight ${dark ? 'text-ivory' : 'text-ink'}`}>
             TB <span className="italic">Case Study</span>
           </span>
         </button>
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-4 sm:gap-7">
           {link('Case', 'case', active === 'case')}
           {link('Questions', 'index', inQuestions)}
           <a

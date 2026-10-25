@@ -28,7 +28,7 @@ fonts are used if there's no connection.
 ### `src/config.js`
 | key | what it changes |
 |---|---|
-| `presenters` | the presenting team, listed under "Presented by" in the footer |
+| `presenters` | the presenting team, shown as avatars in the "Presented by" section |
 | `className` | hero badge, footer |
 | `collegeName`, `departmentName` | hero footer line, footer |
 | `preloaderMs` | length of the intro animation |
