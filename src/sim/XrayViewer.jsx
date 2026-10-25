@@ -7,7 +7,7 @@ const TOOLS = [
   { id: 'wl', label: 'Window / level', icon: SunMedium, hint: 'Drag: ←→ contrast, ↑↓ brightness' },
   { id: 'pan', label: 'Pan', icon: Move, hint: 'Drag to move' },
   { id: 'zoom', label: 'Zoom', icon: ZoomIn, hint: 'Drag ↑↓ or scroll' },
-  { id: 'measure', label: 'Measure', icon: Ruler, hint: 'Drag across a structure' },
+  { id: 'measure', label: 'Measure', icon: Ruler, hint: 'Click two points (or drag) to measure' },
 ];
 
 export default function XrayViewer({ onDone }) {
@@ -121,7 +121,17 @@ export default function XrayViewer({ onDone }) {
         [x2, y2],
       ].forEach(([x, y]) => ctx.fillRect(x - 3, y - 3, 6, 6));
       const cm = (Math.hypot(m.b.x - m.a.x, m.b.y - m.a.y) * PIXEL_MM) / 10;
-      ctx.fillText(`${cm.toFixed(1)} cm`, x2 + 8, y2 - 8);
+      const label = cm < 0.05 ? (m.open ? 'click the second point' : '') : cm < 1 ? `${(cm * 10).toFixed(0)} mm` : `${cm.toFixed(1)} cm`;
+      if (label) {
+        ctx.save();
+        ctx.font = '600 13px Inter, sans-serif';
+        const w = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(0,0,0,.7)';
+        ctx.fillRect(x2 + 8, y2 - 24, w + 10, 20);
+        ctx.fillStyle = '#38BDF8';
+        ctx.fillText(label, x2 + 13, y2 - 9);
+        ctx.restore();
+      }
     });
   }, [view, ann, ctr, measures, xr, layout]);
 
@@ -145,14 +155,28 @@ export default function XrayViewer({ onDone }) {
     return () => c.removeEventListener('wheel', onWheel);
   }, []);
 
+  // measuring: either drag from A to B, or click A then click B (a live line follows the mouse)
+  const pending = useRef(false);
   const down = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (tool === 'measure' && pending.current) {
+      const b = toImg(e);
+      pending.current = false;
+      setMeasures((m) => [...m.slice(0, -1), { ...m[m.length - 1], b, open: false }]);
+      return;
+    }
     drag.current = { x: e.clientX, y: e.clientY, v: view, a: toImg(e) };
-    if (tool === 'measure') setMeasures((m) => [...m, { a: drag.current.a, b: drag.current.a }]);
+    if (tool === 'measure') setMeasures((m) => [...m, { a: drag.current.a, b: drag.current.a, open: true }]);
   };
   const move = (e) => {
     const d = drag.current;
-    if (!d) return;
+    if (!d) {
+      if (tool === 'measure' && pending.current) {
+        const b = toImg(e);
+        setMeasures((m) => [...m.slice(0, -1), { ...m[m.length - 1], b }]);
+      }
+      return;
+    }
     const dx = e.clientX - d.x;
     const dy = e.clientY - d.y;
     if (tool === 'wl') setView({ ...d.v, contrast: Math.min(3, Math.max(0.3, d.v.contrast + dx / 300)), bright: Math.min(2.2, Math.max(0.3, d.v.bright - dy / 300)) });
@@ -160,10 +184,23 @@ export default function XrayViewer({ onDone }) {
     else if (tool === 'zoom') setView({ ...d.v, zoom: Math.min(6, Math.max(0.6, d.v.zoom * (1 - dy / 250))) });
     else if (tool === 'measure') {
       const b = toImg(e);
-      setMeasures((m) => [...m.slice(0, -1), { a: d.a, b }]);
+      setMeasures((m) => [...m.slice(0, -1), { a: d.a, b, open: true }]);
     }
   };
-  const up = () => (drag.current = null);
+  const up = (e) => {
+    const d = drag.current;
+    drag.current = null;
+    if (tool !== 'measure' || !d) return;
+    const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+    if (moved < 6) pending.current = true; // it was a click → wait for the second point
+    else setMeasures((m) => [...m.slice(0, -1), { ...m[m.length - 1], open: false }]);
+  };
+  useEffect(() => {
+    if (tool !== 'measure' && pending.current) {
+      pending.current = false;
+      setMeasures((m) => m.slice(0, -1));
+    }
+  }, [tool]);
 
   const ww = Math.round(1500 / view.contrast);
   const wl = Math.round(-600 + (1 - view.bright) * 500);
